@@ -29,6 +29,14 @@ module Dumbo
     layout :data,     :pointer,
            :length,   :uint,
            :capacity, :uint
+
+    def length
+      self[:length]
+    end
+
+    def data
+      self[:data]
+    end
   end
 
   class GumboSourcePosition < FFI::Struct
@@ -48,6 +56,18 @@ module Dumbo
            :name,              :string,
            :public_identifier, :string,
            :system_identifier, :string
+
+    def children
+      self[:children]
+    end
+
+    def has_doctype
+      self[:has_doctype]
+    end
+
+    def name
+      self[:name]
+    end
   end
 
   class GumboElement < FFI::Struct
@@ -70,6 +90,18 @@ module Dumbo
     layout :document, GumboDocument,
            :element,  GumboElement,
            :text,     GumboText
+
+    def document
+      self[:document]
+    end
+
+    def element
+      self[:element]
+    end
+
+    def text
+      self[:text]
+    end
   end
 
   class GumboNode < FFI::Struct
@@ -77,7 +109,22 @@ module Dumbo
            :parent,              :pointer, #GumboNode
            :index_within_parent, :size_t,
            :parse_flags,         :gumbo_parse_flags,
-           :data,                GumboNodeUnion
+           :_data,                GumboNodeUnion
+
+    def parse_flags
+      self[:parse_flags]
+    end
+
+    def data
+      case self[:type]
+      when :node_document
+        self[:_data].document
+      when :node_element
+        self[:_data].element
+      when :node_text
+        self[:_Data].text
+      end
+    end
   end
 
   class GumboOutputStruct < FFI::Struct

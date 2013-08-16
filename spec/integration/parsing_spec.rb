@@ -24,4 +24,40 @@ describe "Parsing" do
       expect(subject.errors).to be_instance_of(Dumbo::GumboVector)
     end
   end
+
+  context "GumboNode" do
+    subject{ Dumbo.parse("<html></html>").document }
+
+    it "knows its parse_flags" do
+      expect(subject.parse_flags).to eq(:insertion_by_parser)
+    end
+
+    it "has data of the appropriate type" do
+      expect(subject.data).to be_instance_of(Dumbo::GumboDocument)
+    end
+  end
+
+  context "GumboDocument" do
+    subject{ Dumbo.parse("<html></html>").document.data }
+
+    it "knows its children" do
+      expect(subject.children).to be_instance_of(Dumbo::GumboVector)
+    end
+
+    it "knows if it has a doctype" do
+      expect(subject.has_doctype).to eq(false)
+    end
+
+    it "has a name" do
+      expect(subject.name).to eq("")
+    end
+  end
+
+  context "GumboVector" do
+    subject{ Dumbo.parse("<html></html>").document.data.children }
+
+    it "has a length" do
+      expect(subject.length).to eq(1) # The html node
+    end
+  end
 end
