@@ -33,6 +33,7 @@ module Dumbo
 
   enum :gumbo_token_type, [ :doctype, :start_tag, :end_tag, :comment, :whitespace, :character, :null, :eof ]
 
+  enum :gumbo_quirks_mode, [ :no_quirks, :quirks, :limited_quirks ]
 
   class GumboVector < FFI::Struct
     layout :data,     :pointer,
@@ -65,16 +66,17 @@ module Dumbo
   end
 
   class GumboStringPiece < FFI::Struct
-    layout :data, :string,
+    layout :data, :pointer, #string
            :length, :size_t
   end
 
   class GumboDocument < FFI::Struct
-    layout :children,          GumboVector,
-           :has_doctype,       :bool,
-           :name,              :string,
-           :public_identifier, :string,
-           :system_identifier, :string
+    layout :children,             GumboVector,
+           :has_doctype,          :bool,
+           :name,                 :pointer, #string
+           :public_identifier,    :pointer, #string
+           :system_identifier,    :pointer,  #string
+           :doc_type_quirks_mode, :gumbo_quirks_mode
   end
 
   class GumboElement < FFI::Struct
@@ -88,9 +90,23 @@ module Dumbo
   end
 
   class GumboText < FFI::Struct
-    layout :text,          :string,
+    layout :text,          :pointer, # string
            :original_text, GumboStringPiece,
            :start_pos,     GumboSourcePosition
+  end
+
+  class GumboErrorUnion < FFI::Union
+    layout :tokenizer,      GumboTokenizerError,
+           :text,           GumboStringPiece,
+           :duplicate_attr, GumboDuplicateAttrError,
+           :parser,         GumboParserError
+  end
+
+  class GumboError < FFI::Struct
+    layout :type,          :gumbo_error_type,
+           :position,      GumboSourcePosition,
+           :original_text, :pointer,
+           :info,          GumboErrorUnion
   end
 
   class GumboNodeUnion < FFI::Union
