@@ -39,7 +39,7 @@ module Dumbo
 
   class GumboStringPiece < FFI::Struct
     layout :data, :string,
-           :length, :int
+           :length, :size_t
   end
 
   class GumboDocument < FFI::Struct
