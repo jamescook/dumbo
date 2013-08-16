@@ -81,11 +81,27 @@ module Dumbo
   end
 
   class GumboOutputStruct < FFI::Struct
-    layout :document, :pointer, #GumboNode,
-           :root,     :pointer, #GumboNode,
+    layout :_document, :pointer, #GumboNode,
+           :_root,     :pointer, #GumboNode,
            :errors,   GumboVector
+
+    def document
+      Dumbo::GumboNode.new(self[:_document])
+    end
+
+    def root
+      Dumbo::GumboNode.new(self[:_root])
+    end
+
+    def errors
+      self[:errors]
+    end
   end
 
   #attach_function "gumbo_parse", [:string], GumboOutputStruct.
   attach_function "gumbo_parse", [:string], :pointer
+
+  def self.parse(input)
+    Dumbo::GumboOutputStruct.new(gumbo_parse(input))
+  end
 end
