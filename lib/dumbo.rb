@@ -45,7 +45,7 @@ module Dumbo
     end
 
     def data
-      self[:data].type_size
+      self[:data].get_array_of_pointers
     end
   end
 
@@ -87,7 +87,7 @@ module Dumbo
            :doc_type_quirks_mode, :gumbo_quirks_mode
 
     def children
-      self[:children]
+      Dumbo.map_vector_to_type(GumboNode, self[:children])
     end
 
     def has_doctype
@@ -107,12 +107,20 @@ module Dumbo
            :original_end_tag, GumboStringPiece,
            :start_pos,        GumboSourcePosition,
            :end_pos,          GumboSourcePosition
+
+    def children
+      Dumbo.map_vector_to_type(GumboNode, self[:children])
+    end
   end
 
   class GumboText < FFI::Struct
     layout :text,          :pointer, # string
            :original_text, GumboStringPiece,
            :start_pos,     GumboSourcePosition
+
+    def text
+      self[:text].read_string
+    end
   end
 
   class GumboErrorUnion < FFI::Union
@@ -165,7 +173,13 @@ module Dumbo
       when :node_element
         self[:_data].element
       when :node_text
-        self[:_Data].text
+        self[:_data].text
+      end
+    end
+
+    def text
+      if(data.is_a?(GumboText))
+        data.text
       end
     end
   end
@@ -193,5 +207,10 @@ module Dumbo
 
   def self.parse(input)
     Dumbo::GumboOutputStruct.new(gumbo_parse(input))
+  end
+
+  def self.map_vector_to_type(type, vec)
+    pointers = vec[:data].read_array_of_pointer(vec.length)
+    pointers.map{|p| type.new(p) }
   end
 end

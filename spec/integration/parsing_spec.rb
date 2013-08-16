@@ -1,3 +1,4 @@
+require 'pry'
 require_relative '../../lib/dumbo'
 
 describe "Parsing" do
@@ -41,7 +42,7 @@ describe "Parsing" do
     subject{ Dumbo.parse("<html></html>").document.data }
 
     it "knows its children" do
-      expect(subject.children).to be_instance_of(Dumbo::GumboVector)
+      expect(subject.children.first.data[:tag]).to eq(:tag_html)
     end
 
     it "knows if it has a doctype" do
@@ -54,21 +55,28 @@ describe "Parsing" do
 
     context "with a doctype" do
       subject{ Dumbo.parse("<!DOCTYPE html><html></html>").document.data }
+
       it "has a doctype" do
         expect(subject.has_doctype).to eq(true)
       end
     end
   end
 
-  context "GumboVector" do
-    subject{ Dumbo.parse("<html></html>").document.data.children }
+  context "GumboElement" do
+    let(:document) { Dumbo.parse("<html><head><title>Foo</title></head></html>").document.data }
+    let(:head) { document.children.first.data.children.first.data }
+    let(:title) { head.children.first.data }
 
-    it "has a length" do
-      expect(subject.length).to eq(1) # The html node
+    it "has a head tag" do
+      expect(head[:tag]).to eq(:tag_head)
     end
 
-    it "has some data" do
-      expect(subject.data).to eq(1) # The html node
+    it "can get to the title" do
+      expect(title[:tag]).to eq(:tag_title)
+    end
+
+    it "can get to the title's text" do
+      expect(title.children.first.text).to eq("Foo")
     end
   end
 end
