@@ -63,8 +63,9 @@ describe "Parsing" do
   end
 
   context "GumboElement" do
-    let(:document) { Dumbo.parse("<html><head><title>Foo</title></head></html>").document.data }
-    let(:head) { document.children.first.data.children.first.data }
+    let(:document) { Dumbo.parse("<html lang=en><head><title>Foo</title></head></html>").document.data }
+    let(:html) { document.children.first.data }
+    let(:head) { html.children.first.data }
     let(:title) { head.children.first.data }
 
     it "has a head tag" do
@@ -77,6 +78,13 @@ describe "Parsing" do
 
     it "can get to the title's text" do
       expect(title.children.first.text).to eq("Foo")
+    end
+
+    it "can get to an attribute" do
+      attr = html.attributes.first
+      expect(attr).to be_instance_of(Dumbo::GumboAttribute)
+      expect(attr.name).to eq("lang")
+      expect(attr.value).to eq("en")
     end
   end
 end

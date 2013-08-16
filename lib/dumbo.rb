@@ -23,6 +23,8 @@ module Dumbo
 
   enum :gumbo_namespace_enum, [ :namespace_html, :namespace_svg, :namespace_mathml ]
 
+  enum :gumbo_attribute_namespace_enum, [ :none, :xlink, :xml, :xmlns ]
+
   enum :gumbo_tag, [:tag_html, :tag_head, :tag_title, :tag_base, :tag_link, :tag_meta, :tag_style, :tag_script, :tag_noscript, :tag_body, :tag_section, :tag_nav, :tag_article, :tag_aside, :tag_h1, :tag_h2, :tag_h3, :tag_h4, :tag_h5, :tag_h6, :tag_hgroup, :tag_header, :tag_footer, :tag_address, :tag_p, :tag_hr, :tag_pre, :tag_blockquote, :tag_ol, :tag_ul, :tag_li, :tag_dl, :tag_dt, :tag_dd, :tag_figure, :tag_figcaption, :tag_div, :tag_a, :tag_em, :tag_strong, :tag_small, :tag_s, :tag_cite, :tag_q, :tag_dfn, :tag_abbr, :tag_time, :tag_code, :tag_var, :tag_samp, :tag_kbd, :tag_sub, :tag_sup, :tag_i, :tag_b, :tag_mark, :tag_ruby, :tag_rt, :tag_rp, :tag_bdi, :tag_bdo, :tag_span, :tag_br, :tag_wbr, :tag_ins, :tag_del, :tag_image, :tag_img, :tag_iframe, :tag_embed, :tag_object, :tag_param, :tag_video, :tag_audio, :tag_source, :tag_track, :tag_canvas, :tag_map, :tag_area, :tag_math, :tag_mi, :tag_mo, :tag_mn, :tag_ms, :tag_mtext, :tag_mglyph, :tag_malignmark, :tag_annotation_xml, :tag_svg, :tag_foreignobject, :tag_desc, :tag_table, :tag_caption, :tag_colgroup, :tag_col, :tag_tbody, :tag_thead, :tag_tfoot, :tag_tr, :tag_td, :tag_th, :tag_form, :tag_fieldset, :tag_legend, :tag_label, :tag_input, :tag_button, :tag_select, :tag_datalist, :tag_optgroup, :tag_option, :tag_textarea, :tag_keygen, :tag_output, :tag_progress, :tag_meter, :tag_details, :tag_summary, :tag_command, :tag_menu, :tag_applet, :tag_acronym, :tag_bgsound, :tag_dir, :tag_frame, :tag_frameset, :tag_noframes, :tag_isindex, :tag_listing, :tag_xmp, :tag_nextid, :tag_noembed, :tag_plaintext, :tag_rb, :tag_strike, :tag_basefont, :tag_big, :tag_blink, :tag_center, :tag_font, :tag_marquee, :tag_multicol, :tag_nobr, :tag_spacer, :tag_tt, :tag_u, :tag_unknown, :tag_last]
 
   enum :gumbo_insertion_mode, [ :initial, :before_html, :before_head, :in_head, :in_head_noscript, :after_head, :in_body, :text, :in_table, :in_table_text, :in_caption, :in_column_group, :in_table_body, :in_row, :in_cell, :in_select, :in_select_in_table, :after_body, :in_frameset, :after_frameset, :after_after_body, :after_after_frameset ]
@@ -106,10 +108,35 @@ module Dumbo
            :original_tag,     GumboStringPiece,
            :original_end_tag, GumboStringPiece,
            :start_pos,        GumboSourcePosition,
-           :end_pos,          GumboSourcePosition
+           :end_pos,          GumboSourcePosition,
+           :attributes,       GumboVector
 
     def children
       Dumbo.map_vector_to_type(GumboNode, self[:children])
+    end
+
+    def attributes
+      Dumbo.map_vector_to_type(GumboAttribute, self[:attributes])
+    end
+  end
+
+  class GumboAttribute < FFI::Struct
+    layout :attr_namespace, :gumbo_attribute_namespace_enum,
+           :name,           :string,
+           :original_name,  GumboStringPiece,
+           :value,          :string,
+           :original_value, GumboStringPiece,
+           :name_start,     GumboSourcePosition,
+           :name_end,       GumboSourcePosition,
+           :value_start,    GumboSourcePosition,
+           :value_end,      GumboSourcePosition
+
+    def name
+      self[:name]
+    end
+
+    def value
+      self[:value]
     end
   end
 
