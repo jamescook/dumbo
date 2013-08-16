@@ -51,6 +51,13 @@ describe "Parsing" do
     it "has a name" do
       expect(subject.name).to eq("")
     end
+
+    context "with a doctype" do
+      subject{ Dumbo.parse("<!DOCTYPE html><html></html>").document.data }
+      it "has a doctype" do
+        expect(subject.has_doctype).to eq(true)
+      end
+    end
   end
 
   context "GumboVector" do
@@ -58,6 +65,10 @@ describe "Parsing" do
 
     it "has a length" do
       expect(subject.length).to eq(1) # The html node
+    end
+
+    it "has some data" do
+      expect(subject.data).to eq(1) # The html node
     end
   end
 end
