@@ -5,7 +5,7 @@ require "ffi"
 module Dumbo
   extend FFI::Library
 
-  ffi_lib "/usr/local/lib/libgumbo.so.1.0.0"
+  ffi_lib "libgumbo"
 
   enum :gumbo_node_type,   [:node_document, :node_element, :node_text, :node_cdata, :node_comment, :node_whitespace]
   enum :gumbo_parse_flags, [:insertion_normal,                           0,
@@ -64,7 +64,7 @@ module Dumbo
   end
 
   class GumboDuplicateAttrError < FFI::Struct
-    layout :name,           :string,
+    layout :name,           :pointer,
            :original_index, :uint,
            :new_index,      :uint
   end
@@ -162,6 +162,14 @@ module Dumbo
            :position,      GumboSourcePosition,
            :original_text, :pointer,
            :info,          GumboErrorUnion
+
+    def original_text
+      self[:original_text].read_string
+    end
+
+    def type
+      self[:type]
+    end
   end
 
   class GumboNodeUnion < FFI::Union
@@ -225,11 +233,10 @@ module Dumbo
     end
 
     def errors
-      self[:errors]
+      Dumbo.map_vector_to_type(GumboError, self[:errors])
     end
   end
 
-  #attach_function "gumbo_parse", [:string], GumboOutputStruct.
   attach_function "gumbo_parse", [:string], :pointer
 
   def self.parse(input)

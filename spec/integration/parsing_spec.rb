@@ -22,7 +22,19 @@ describe "Parsing" do
     end
 
     it "wraps errors" do
-      expect(subject.errors).to be_instance_of(Dumbo::GumboVector)
+      expect(subject.errors.first).to be_an_instance_of(Dumbo::GumboError)
+    end
+  end
+
+  context "an invalid document" do
+    subject{ Dumbo.parse("<!DOCTYPE html><html><head></head><body></body></html>") }
+
+    it "has errors" do
+      subject.errors.count.should == 1
+    end
+
+    it "knows the kind of error" do
+      subject.errors.first.type.should == :parser
     end
   end
 
@@ -37,6 +49,7 @@ describe "Parsing" do
       expect(subject.data).to be_instance_of(Dumbo::GumboDocument)
     end
   end
+
 
   context "GumboDocument" do
     subject{ Dumbo.parse("<html></html>").document.data }
