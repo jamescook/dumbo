@@ -37,6 +37,24 @@ module Dumbo
 
   enum :gumbo_quirks_mode, [ :no_quirks, :quirks, :limited_quirks ]
 
+  enum :gumbo_tokenizer_enum, [ :data, :char_ref_in_data, :rcdata, :char_ref_in_rcdata, :rawtext, :script, :plaintext, :tag_open, :end_tag_open, :tag_name, :rcdata_lt, :rcdata_end_tag_open, :rcdata_end_tag_name, :rawtext_lt, :rawtext_end_tag_open, :rawtext_end_tag_name, :script_lt, :script_end_tag_open, :script_end_tag_name, :script_escaped_start, :script_escaped_start_dash, :script_escaped, :script_escaped_dash, :script_escaped_dash_dash, :script_escaped_lt, :script_escaped_end_tag_open, :script_escaped_end_tag_name, :script_double_escaped_start, :script_double_escaped, :script_double_escaped_dash, :script_double_escaped_dash_dash, :script_double_escaped_lt, :script_double_escaped_end, :before_attr_name, :attr_name, :after_attr_name, :before_attr_value, :attr_value_double_quoted, :attr_value_single_quoted, :attr_value_unquoted, :char_ref_in_attr_value, :after_attr_value_quoted, :self_closing_start_tag, :bogus_comment, :markup_declaration, :comment_start, :comment_start_dash, :comment, :comment_end_dash, :comment_end, :comment_end_bang, :doctype, :before_doctype_name, :doctype_name, :after_doctype_name, :after_doctype_public_keyword, :before_doctype_public_id, :doctype_public_id_double_quoted, :doctype_public_id_single_quoted, :after_doctype_public_id, :between_doctype_public_system_id, :after_doctype_system_keyword, :before_doctype_system_id, :doctype_system_id_double_quoted, :doctype_system_id_single_quoted, :after_doctype_system_id, :bogus_doctype, :cdata ]
+
+
+  class GumboTokenDocType < FFI::Struct
+    layout :name,                  :pointer,
+           :public_identifier,     :pointer,
+           :system_identifier,     :pointer,
+           :force_quirks,          :bool,
+           :has_public_identifier, :bool,
+           :has_system_identifier, :bool
+  end
+
+  class GumboStringBuffer < FFI::Struct
+    layout :data,     :pointer,
+           :length,   :size_t,
+           :capacity, :size_t
+  end
+
   class GumboVector < FFI::Struct
     layout :data,     :pointer,
            :length,   :uint,
@@ -237,7 +255,90 @@ module Dumbo
     end
   end
 
+  class GumboTagState < FFI::Struct
+    layout :buffer,               GumboStringBuffer,
+           :original_text,        :pointer,
+           :tag,                  :gumbo_tag,
+           :start_pos,            GumboSourcePosition,
+           :attributes,           GumboVector,
+           :drop_next_attr_value, :bool,
+           :attr_value_state,     :gumbo_tokenizer_enum,
+           :last_start_tag,       :gumbo_tag,
+           :is_start_tag,         :bool,
+           :is_self_closing,      :bool
+  end
+
+  callback :gumbo_allocator_function,   [:pointer, :size_t], :pointer
+  callback :gumbo_deallocator_function, [:pointer, :pointer], :void
+
+  class GumboOptionsStruct < FFI::Struct
+    layout :allocator,           :gumbo_allocator_function, # I dunno
+           :deallocator,         :gumbo_deallocator_function,
+           :userdata,            :pointer,
+           :tab_stop,            :int,
+           :stop_on_first_error, :bool,
+           :max_errors,          :int
+  end
+
+  class Utf8Iterator < FFI::Struct
+    layout :start,    :pointer,
+           :mark,     :pointer,
+           :end,      :pointer,
+           :current,  :int,
+           :width,    :int,
+           :pos,      GumboSourcePosition,
+           :mark_pos, GumboSourcePosition,
+           :parser,   :pointer
+  end
+
+  class GumboTokenizerState < FFI::Struct
+    layout :state,                   :gumbo_tokenizer_enum,
+           :reconsume_current_input, :bool,
+           :is_current_node_foreign, :bool,
+           :buffered_emit_char,      :int,
+           :temporary_buffer,        GumboStringBuffer,
+           :temporary_buffer_emit,   :pointer,
+           :script_data_buffer,      GumboStringBuffer,
+           :token_start,             :pointer,
+           :token_start_pos,         GumboSourcePosition,
+           :tag_state,               GumboTagState,
+           :doc_type_state,          GumboTokenDocType,
+           :input,                   Utf8Iterator
+  end
+
+  class GumboTextNodeBufferState < FFI::Struct
+    layout :buffer,              GumboStringBuffer,
+           :start_original_text, :pointer,
+           :start_position,      GumboSourcePosition,
+           :type,                :gumbo_node_type
+  end
+
+  class GumboParserState < FFI::Struct
+    layout :insertion_mode,                 :gumbo_insertion_mode,
+           :original_insertion_mode,        :gumbo_insertion_mode,
+           :open_elements,                  GumboVector,
+           :active_formatting_elements,     GumboVector,
+           :head_element,                   :pointer,
+           :form_element,                   :pointer,
+           :reprocess_current_token,        :bool,
+           :self_closing_flag_acknowledged, :bool,
+           :ignore_next_linefeed,           :bool,
+           :foster_parent_insertions,       :bool,
+           :text_node,                      GumboTextNodeBufferState,
+           :current_token,                  :pointer,
+           :closed_body_tag,                :bool,
+           :closed_html_tag,                :bool
+  end
+
+  class GumboParser < FFI::Struct
+    layout :options,         GumboOptionsStruct,
+           :output,          GumboOutputStruct,
+           :tokenizer_state, GumboTokenizerState,
+           :parser_state,    GumboParserState
+  end
+
   attach_function "gumbo_parse", [:string], :pointer
+  attach_function "gumbo_error_to_string", [:pointer, :pointer], :void
 
   def self.parse(input)
     Dumbo::GumboOutputStruct.new(gumbo_parse(input))
